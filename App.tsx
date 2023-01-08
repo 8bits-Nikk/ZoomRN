@@ -9,7 +9,7 @@ const App = () => {
   const [isInitialize, setIsInitialize] = useState(false);
 
   const api = create({
-    baseURL: 'https://a785-103-249-234-143.in.ngrok.io',
+    baseURL: 'https://d236-103-249-234-143.in.ngrok.io/',
   });
 
   const initializeZoom = async (sdkJwtToken: string) => {
@@ -43,37 +43,68 @@ const App = () => {
     return '';
   };
 
+  const setMeetingData = async (data: {
+    userId: string;
+    meetingNumber: string;
+    zoomAccessToken: string;
+  }) => {
+    try {
+      await api.post('/v1/setMeetData', data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getMeetingData = async () => {
+    const res = await api.get('/v1/getMeetData');
+    if (res.data) {
+      return res.data;
+    }
+    return {};
+  };
+
   const onPress = async () => {
     setIsInitialize(false);
     setIsLoading(true);
     const token = await getSDKToken();
-    console.log('====================================');
+    console.log('==================SDK Token==================');
     console.log(token);
     console.log('====================================');
     await initializeZoom(token.toString());
   };
 
   const onPressJoin = async () => {
+    const Meeting = await getMeetingData();
     await ZoomUs.joinMeeting({
-      userName: 'User Test',
-      meetingNumber: '',
+      userName: 'App UserName',
+      meetingNumber: Meeting?.meetingNumber,
+      zoomAccessToken: Meeting?.zoomAccessToken,
     });
   };
+
   const onPressCreate = async () => {
     setIsLoading(true);
     const token = await getApiToken();
-    console.log('====================================');
+    console.log('================Token====================');
     console.log(token);
     console.log('====================================');
-    main(token.toString()).then(res => {
-      setIsLoading(false);
-      ZoomUs.startMeeting({
+    main(token).then(async res => {
+      await setMeetingData({
+        userId: res.userId,
+        meetingNumber: res.meetingNumber,
+        zoomAccessToken: res.zoomAccessToken,
+      });
+      const start = await ZoomUs.startMeeting({
         userName: 'Dr. Tester',
         meetingNumber: res.meetingNumber,
         userId: res.userId,
         zoomAccessToken: res.zoomAccessToken,
-        // userType: 2, // optional
       });
+
+      console.log('===============Meeting Start=====================');
+      console.log(start);
+      console.log('====================================');
+      setIsLoading(false);
     });
   };
 
